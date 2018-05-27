@@ -26,21 +26,22 @@ Main.prototype.initScene = function() {
     this.scene = new THREE.Scene();
     this.scene.add(this.camera);
 
-    var light = new THREE.PointLight( 0xff0000, 0.5, 100 );
+    var light = new THREE.PointLight( 0xffffff, 2, 100 );
     light.position.set( -5, 5, 5 );
     this.camera.add(light);
 
-    var ambient = new THREE.AmbientLight( 0xff0000, 0.5 );
+    var ambient = new THREE.AmbientLight( 0xffffff, 0.25 );
     this.camera.add(ambient);
 
     var mat = new THREE.MeshLambertMaterial({
         color: 0xff0000,
-        opacity: 0.5,
+        opacity: 0.25,
         transparent: true
     });
     var tubeMat = new THREE.MeshLambertMaterial({
-        color: 0x333333
+        color: 0x666666
     });
+    this.curveMat = tubeMat;
 
     var count = 15;
     var positions = [];
@@ -53,6 +54,7 @@ Main.prototype.initScene = function() {
     }
 
     var beadRadius = .3;
+    this.beadRadius = beadRadius;
 
     var bodies = positions.map(function(position, i) {
         var shape = new CANNON.Sphere(beadRadius);
@@ -95,15 +97,29 @@ Main.prototype.initScene = function() {
         var tube = new THREE.Mesh(tubeGeom, tubeMat);
         tube.sphereA = sphere;
         tube.sphereB = nextSphere;
-        this.scene.add(tube);
+        // this.scene.add(tube);
         return tube;
+    }.bind(this));
+
+    this.curvePath = new THREE.CurvePath();
+
+    this.curves = this.spheres.map(function(sphere, i) {
+        var curve = new THREE.QuadraticBezierCurve3(
+            new THREE.Vector3(),
+            new THREE.Vector3(),
+            new THREE.Vector3()
+        );
+        curve.sphere = sphere;
+        curve.lastSphere = this.spheres[this.mod(i - 1, this.spheres.length)];
+        curve.nextSphere = this.spheres[this.mod(i + 1, this.spheres.length)];
+        this.curvePath.add(curve);
+        return curve;
     }.bind(this));
 
     this.update();
 };
 
 Main.prototype.update = function() {
-    // console.log(this.world.bodies[0].position);
 
     this.spheres.forEach(function(sphere) {
         sphere.position.copy(sphere.body.position);
@@ -118,6 +134,26 @@ Main.prototype.update = function() {
         tube.lookAt(posA);
         tube.scale.setZ(posA.distanceTo(posB));
     });
+
+    this.curves.forEach(function(curve) {
+        var a = curve.lastSphere.position;
+        var b = curve.sphere.position;
+        var c = curve.nextSphere.position;
+
+        a = a.clone().lerp(b, .5);
+        c = c.clone().lerp(b, .5);
+
+        curve.v0.copy(a);
+        curve.v1.copy(b);
+        curve.v2.copy(c);
+    });
+
+    if (this.curveMesh) {
+        this.scene.remove(this.curveMesh);
+    }
+    var curveGeom = new THREE.TubeBufferGeometry(this.curvePath, 150, this.beadRadius, 20, true);
+    this.curveMesh = new THREE.Mesh(curveGeom, this.curveMat );
+    this.scene.add(this.curveMesh);
 };
 
 Main.prototype.initCanon = function() {
@@ -171,6 +207,10 @@ Main.prototype.onResize = function() {
     var width = document.body.clientWidth;
     var height = document.body.clientHeight;
     this.setSize(width, height);
+};
+
+Main.prototype.mod = function(a, n) {
+    return a - Math.floor(a / n) * n;
 };
 
 const main = new Main();
