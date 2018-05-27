@@ -104,7 +104,7 @@ Main.prototype.initScene = function() {
     this.angle2Spheres = [];
     this.spheres = bodies.map(function(bodies, i) {
         var outer = i % (count / 3) == 2;
-        var angle1 =  i == 5 || i == 9;
+        var angle1 =  i == 0 || i == 4;
         var angle2 =  i == 10 || i == 14;
         var material = outer ? outerMat : mat;
         material = angle1 ? angle1Mat : material;
