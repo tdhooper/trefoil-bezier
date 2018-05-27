@@ -15,11 +15,18 @@ const Main = function() {
 };
 
 Main.prototype.trefoil = function(a) {
-    return new THREE.Vector3(
+    var pos = new THREE.Vector3(
         Math.sin(a) + 2 * Math.sin(2 * a),
         Math.cos(a) - 2 * Math.cos(2 * a),
         -Math.sin(3 * a)
     );
+    pos.applyAxisAngle(new THREE.Vector3(1,0,0), .1);
+    pos.applyAxisAngle(new THREE.Vector3(0,1,0), .2);
+    pos.applyAxisAngle(new THREE.Vector3(0,0,1), -.1);
+    pos.x += .5;
+    pos.y -= .5;
+    pos.z -= .5;
+    return pos;
 };
 
 Main.prototype.initScene = function() {
@@ -27,7 +34,11 @@ Main.prototype.initScene = function() {
     this.scene.add(this.camera);
 
     this.group = new THREE.Group();
-    this.scene.add(this.group);
+
+    this.group2 = new THREE.Group();
+    this.group2.add(this.group);
+    this.scene.add(this.group2);
+
 
     var light = new THREE.PointLight( 0xffffff, 2, 100 );
     light.position.set( -5, 5, 5 );
@@ -38,23 +49,15 @@ Main.prototype.initScene = function() {
 
     var mat = new THREE.MeshLambertMaterial({
         color: 0xff0000,
-        opacity: 0.25,
-        transparent: true
     });
     var outerMat = new THREE.MeshLambertMaterial({
         color: 0x0000ff,
-        opacity: 0.25,
-        transparent: true
     });
     var angle1Mat = new THREE.MeshLambertMaterial({
         color: 0x00ff00,
-        opacity: 0.25,
-        transparent: true
     });
     var angle2Mat = new THREE.MeshLambertMaterial({
         color: 0xffff00,
-        opacity: 0.25,
-        transparent: true
     });
     var tubeMat = new THREE.MeshLambertMaterial({
         color: 0x666666
@@ -62,7 +65,9 @@ Main.prototype.initScene = function() {
     this.curveMat = tubeMat;
     var planeMat = new THREE.MeshLambertMaterial({
         color: 0x666666,
-        side: THREE.DoubleSide
+        side: THREE.DoubleSide,
+        opacity: 0.25,
+        transparent: true
     });
 
     var count = 15;
@@ -101,7 +106,7 @@ Main.prototype.initScene = function() {
         this.world.addConstraint(constraint);
     }.bind(this));
 
-    var sphereGeom = new THREE.SphereGeometry(beadRadius,50,50);
+    var sphereGeom = new THREE.SphereGeometry(beadRadius * .1, 10, 10);
     this.outerSpheres = [];
     this.angle1Spheres = [];
     this.angle2Spheres = [];
@@ -213,28 +218,36 @@ Main.prototype.update = function() {
         this.outerSpheres[1].position,
         this.outerSpheres[2].position
     );
-    this.groundPlane.lookAt(plane.normal);
 
-    var center = new THREE.Vector3()
+    this.center = new THREE.Vector3()
         .add(this.outerSpheres[0].position)
         .add(this.outerSpheres[1].position)
         .add(this.outerSpheres[2].position)
-        .divideScalar(3)
-        .add(plane.normal);
+        .divideScalar(3);
+
+    this.normal = plane.normal.clone();
+    this.up = this.center.clone().add(this.normal).multiplyScalar(100);
+
+    this.groundPlane.position.copy(this.center);
+    this.groundPlane.lookAt(this.center.clone().add(plane.normal));
 
     plane.setFromCoplanarPoints(
         this.angle1Spheres[0].position,
         this.angle1Spheres[1].position,
-        center
+        this.up
     );
-    this.angle1Plane.lookAt(plane.normal);
+    this.angle1Plane.position.copy(this.center);
+    this.angle1Plane.lookAt(this.center.clone().add(plane.normal));
 
     plane.setFromCoplanarPoints(
         this.angle2Spheres[0].position,
         this.angle2Spheres[1].position,
-        center
+        this.up
     );
-    this.angle2Plane.lookAt(plane.normal);
+    this.angle2Plane.position.copy(this.center);
+    this.angle2Plane.lookAt(this.center.clone().add(plane.normal));
+
+    this.debug = plane;
 
     // console.log(this.outerSpheres[0].position.x);
 
@@ -284,7 +297,7 @@ Main.prototype.animate = function() {
         diff += Math.abs(position.x - this.lastPosition.x);
         diff += Math.abs(position.y - this.lastPosition.y);
         diff += Math.abs(position.z - this.lastPosition.z);
-        change = diff > 0.00000001;
+        change = diff > 0.00001;
     }
 
     this.lastPosition = position;
@@ -292,6 +305,23 @@ Main.prototype.animate = function() {
     if (change) {
         this.world.step(dt);
         this.update();
+    }
+
+    if ( ! change && ! this.adjusted) {
+        // this.group.position.copy(this.center).multiplyScalar(-1);
+        // this.group2.rotateZ(.01);
+        // this.group.up = this.normal.clone();
+        // this.group2.lookAt(this.normal.clone().multiplyScalar(-1));
+
+        var arrowHelper = new THREE.ArrowHelper(
+            this.normal,
+            this.center
+        );
+        this.scene.add( arrowHelper );
+        // center
+        // rotat on y, so 
+        // console.log('done');
+        this.adjusted = true;
     }
 
     this.render();
