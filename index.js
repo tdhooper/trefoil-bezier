@@ -38,10 +38,29 @@ Main.prototype.initScene = function() {
         opacity: 0.25,
         transparent: true
     });
+    var outerMat = new THREE.MeshLambertMaterial({
+        color: 0x0000ff,
+        opacity: 0.25,
+        transparent: true
+    });
+    var angle1Mat = new THREE.MeshLambertMaterial({
+        color: 0x00ff00,
+        opacity: 0.25,
+        transparent: true
+    });
+    var angle2Mat = new THREE.MeshLambertMaterial({
+        color: 0xffff00,
+        opacity: 0.25,
+        transparent: true
+    });
     var tubeMat = new THREE.MeshLambertMaterial({
         color: 0x666666
     });
     this.curveMat = tubeMat;
+    var planeMat = new THREE.MeshLambertMaterial({
+        color: 0x666666,
+        side: THREE.DoubleSide
+    });
 
     var count = 15;
     var positions = [];
@@ -80,11 +99,28 @@ Main.prototype.initScene = function() {
     }.bind(this));
 
     var sphereGeom = new THREE.SphereGeometry(beadRadius,50,50);
-
+    this.outerSpheres = [];
+    this.angle1Spheres = [];
+    this.angle2Spheres = [];
     this.spheres = bodies.map(function(bodies, i) {
-        var sphere = new THREE.Mesh(sphereGeom, mat);
+        var outer = i % (count / 3) == 2;
+        var angle1 =  i == 5 || i == 9;
+        var angle2 =  i == 10 || i == 14;
+        var material = outer ? outerMat : mat;
+        material = angle1 ? angle1Mat : material;
+        material = angle2 ? angle2Mat : material;
+        var sphere = new THREE.Mesh(sphereGeom, material);
         sphere.body = bodies;
         this.scene.add(sphere);
+        if (outer) {
+            this.outerSpheres.push(sphere);
+        }
+        if (angle1) {
+            this.angle1Spheres.push(sphere);
+        }
+        if (angle2) {
+            this.angle2Spheres.push(sphere);
+        }
         return sphere;
     }.bind(this));
 
@@ -115,6 +151,14 @@ Main.prototype.initScene = function() {
         this.curvePath.add(curve);
         return curve;
     }.bind(this));
+
+    var planeGeom = new THREE.PlaneGeometry(2, 2, 5, 5);
+    this.groundPlane = new THREE.Mesh(planeGeom, planeMat);
+    this.angle1Plane = new THREE.Mesh(planeGeom, planeMat);
+    this.angle2Plane = new THREE.Mesh(planeGeom, planeMat);
+    this.scene.add(this.groundPlane);
+    this.scene.add(this.angle1Plane);
+    this.scene.add(this.angle2Plane);
 
     this.update();
 };
@@ -151,9 +195,45 @@ Main.prototype.update = function() {
     if (this.curveMesh) {
         this.scene.remove(this.curveMesh);
     }
-    var curveGeom = new THREE.TubeBufferGeometry(this.curvePath, 150, this.beadRadius, 20, true);
+    var curveGeom = new THREE.TubeBufferGeometry(
+        this.curvePath,
+        150,
+        this.beadRadius * .1,
+        20,
+        true
+    );
     this.curveMesh = new THREE.Mesh(curveGeom, this.curveMat );
     this.scene.add(this.curveMesh);
+
+    var plane = new THREE.Plane();
+
+    plane.setFromCoplanarPoints(
+        this.outerSpheres[0].position,
+        this.outerSpheres[1].position,
+        this.outerSpheres[2].position
+    );
+    this.groundPlane.lookAt(plane.normal);
+
+    var center = new THREE.Vector3()
+        .add(this.outerSpheres[0].position)
+        .add(this.outerSpheres[1].position)
+        .add(this.outerSpheres[2].position)
+        .divideScalar(3)
+        .add(plane.normal);
+
+    plane.setFromCoplanarPoints(
+        this.angle1Spheres[0].position,
+        this.angle1Spheres[1].position,
+        center
+    );
+    this.angle1Plane.lookAt(plane.normal);
+
+    plane.setFromCoplanarPoints(
+        this.angle2Spheres[0].position,
+        this.angle2Spheres[1].position,
+        center
+    );
+    this.angle2Plane.lookAt(plane.normal);
 };
 
 Main.prototype.initCanon = function() {
