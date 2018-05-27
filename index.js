@@ -59,6 +59,9 @@ Main.prototype.initScene = function() {
     var angle2Mat = new THREE.MeshLambertMaterial({
         color: 0xffff00,
     });
+    var debugMat = new THREE.MeshLambertMaterial({
+        color: 0xff00fff,
+    });
     var tubeMat = new THREE.MeshLambertMaterial({
         color: 0x666666
     });
@@ -167,6 +170,9 @@ Main.prototype.initScene = function() {
     this.group.add(this.groundPlane);
     this.group.add(this.angle1Plane);
     this.group.add(this.angle2Plane);
+
+    this.debugSphere = new THREE.Mesh(sphereGeom, debugMat);
+    this.group.add(this.debugSphere);
 };
 
 Main.prototype.update = function() {
@@ -226,7 +232,10 @@ Main.prototype.update = function() {
         .divideScalar(3);
 
     this.normal = plane.normal.clone();
-    this.up = this.center.clone().add(this.normal).multiplyScalar(100);
+    this.up = this.center.clone()
+        .add(this.normal.clone().multiplyScalar(10));
+
+    this.debugSphere.position.copy(this.up);
 
     this.groundPlane.position.copy(this.center);
     this.groundPlane.lookAt(this.center.clone().add(plane.normal));
