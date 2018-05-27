@@ -26,6 +26,9 @@ Main.prototype.initScene = function() {
     this.scene = new THREE.Scene();
     this.scene.add(this.camera);
 
+    this.group = new THREE.Group();
+    this.scene.add(this.group);
+
     var light = new THREE.PointLight( 0xffffff, 2, 100 );
     light.position.set( -5, 5, 5 );
     this.camera.add(light);
@@ -111,7 +114,7 @@ Main.prototype.initScene = function() {
         material = angle2 ? angle2Mat : material;
         var sphere = new THREE.Mesh(sphereGeom, material);
         sphere.body = bodies;
-        this.scene.add(sphere);
+        this.group.add(sphere);
         if (outer) {
             this.outerSpheres.push(sphere);
         }
@@ -133,7 +136,7 @@ Main.prototype.initScene = function() {
         var tube = new THREE.Mesh(tubeGeom, tubeMat);
         tube.sphereA = sphere;
         tube.sphereB = nextSphere;
-        // this.scene.add(tube);
+        // this.group.add(tube);
         return tube;
     }.bind(this));
 
@@ -156,11 +159,9 @@ Main.prototype.initScene = function() {
     this.groundPlane = new THREE.Mesh(planeGeom, planeMat);
     this.angle1Plane = new THREE.Mesh(planeGeom, planeMat);
     this.angle2Plane = new THREE.Mesh(planeGeom, planeMat);
-    this.scene.add(this.groundPlane);
-    this.scene.add(this.angle1Plane);
-    this.scene.add(this.angle2Plane);
-
-    this.update();
+    this.group.add(this.groundPlane);
+    this.group.add(this.angle1Plane);
+    this.group.add(this.angle2Plane);
 };
 
 Main.prototype.update = function() {
@@ -193,7 +194,7 @@ Main.prototype.update = function() {
     });
 
     if (this.curveMesh) {
-        this.scene.remove(this.curveMesh);
+        this.group.remove(this.curveMesh);
     }
     var curveGeom = new THREE.TubeBufferGeometry(
         this.curvePath,
@@ -203,7 +204,7 @@ Main.prototype.update = function() {
         true
     );
     this.curveMesh = new THREE.Mesh(curveGeom, this.curveMat );
-    this.scene.add(this.curveMesh);
+    this.group.add(this.curveMesh);
 
     var plane = new THREE.Plane();
 
@@ -234,6 +235,10 @@ Main.prototype.update = function() {
         center
     );
     this.angle2Plane.lookAt(plane.normal);
+
+    // console.log(this.outerSpheres[0].position.x);
+
+    // this.group.lookAt(new THREE.Vector3(0,1,0));
 };
 
 Main.prototype.initCanon = function() {
@@ -271,10 +276,26 @@ Main.prototype.render = function() {
 Main.prototype.animate = function() {
     requestAnimationFrame(this.animate.bind(this));
 
-    this.world.step(dt);
-    // var t = world.time;
-    this.update();
+    var position = this.spheres[0].position.clone();
+    var change = true;
+
+    if (this.lastPosition) {
+        var diff = 0;
+        diff += Math.abs(position.x - this.lastPosition.x);
+        diff += Math.abs(position.y - this.lastPosition.y);
+        diff += Math.abs(position.z - this.lastPosition.z);
+        change = diff > 0.00000001;
+    }
+
+    this.lastPosition = position;
+
+    if (change) {
+        this.world.step(dt);
+        this.update();
+    }
+
     this.render();
+
 };
 
 Main.prototype.setSize = function(width, height) {
