@@ -75,7 +75,7 @@ Main.prototype.initScene = function() {
     var planeMat = new THREE.MeshLambertMaterial({
         color: 0x666666,
         side: THREE.DoubleSide,
-        opacity: 0.25,
+        opacity: 0.75,
         transparent: true
     });
 
@@ -129,7 +129,7 @@ Main.prototype.initScene = function() {
         material = angle2 ? angle2Mat : material;
 
         material = mat;
-        if ([9, 5].indexOf(i) !== -1) {
+        if ([10, 9, 8, 3, 2].indexOf(i) !== -1) {
             material = angle1Mat;
         }
 
@@ -177,15 +177,24 @@ Main.prototype.initScene = function() {
     }.bind(this));
 
     var planeGeom = new THREE.PlaneGeometry(2, 2, 5, 5);
-    this.groundPlane = new THREE.Mesh(planeGeom, planeMat);
-    this.angle1Plane = new THREE.Mesh(planeGeom, planeMat);
-    this.angle2Plane = new THREE.Mesh(planeGeom, planeMat);
-    this.group.add(this.groundPlane);
-    this.group.add(this.angle1Plane);
-    this.group.add(this.angle2Plane);
 
-    this.debugSphere = new THREE.Mesh(sphereGeom, debugMat);
-    this.group.add(this.debugSphere);
+    var groundPlane = new THREE.Mesh(planeGeom, planeMat);
+    var angle1Plane = new THREE.Mesh(planeGeom, planeMat);
+    var angle2Plane = new THREE.Mesh(planeGeom, planeMat);
+    var angle3Plane = new THREE.Mesh(planeGeom, planeMat);
+
+    angle1Plane.rotateZ((Math.PI * 2) / 3);
+    angle1Plane.rotateX(Math.PI * .5);
+
+    angle2Plane.rotateZ((Math.PI * 2) / -3);
+    angle2Plane.rotateX(Math.PI * .5);
+
+    angle3Plane.rotateX(Math.PI * .5);
+
+    this.group.add(groundPlane);
+    this.group.add(angle1Plane);
+    this.group.add(angle2Plane);
+    this.group.add(angle3Plane);
 };
 
 Main.prototype.update = function() {
@@ -246,43 +255,6 @@ Main.prototype.update = function() {
         this.outerSpheres[1].position,
         this.outerSpheres[2].position
     );
-
-    this.center = new THREE.Vector3()
-        .add(this.outerSpheres[0].position)
-        .add(this.outerSpheres[1].position)
-        .add(this.outerSpheres[2].position)
-        .divideScalar(3);
-
-    this.normal = plane.normal.clone();
-    this.up = this.center.clone()
-        .add(this.normal.clone().multiplyScalar(10));
-
-    this.debugSphere.position.copy(this.up);
-
-    this.groundPlane.position.copy(this.center);
-    this.groundPlane.lookAt(this.center.clone().add(plane.normal));
-
-    plane.setFromCoplanarPoints(
-        this.angle1Spheres[0].position,
-        this.angle1Spheres[1].position,
-        this.up
-    );
-    this.angle1Plane.position.copy(this.center);
-    this.angle1Plane.lookAt(this.center.clone().add(plane.normal));
-
-    plane.setFromCoplanarPoints(
-        this.angle2Spheres[0].position,
-        this.angle2Spheres[1].position,
-        this.up
-    );
-    this.angle2Plane.position.copy(this.center);
-    this.angle2Plane.lookAt(this.center.clone().add(plane.normal));
-
-    this.debug = plane;
-
-    // console.log(this.outerSpheres[0].position.x);
-
-    // this.group.lookAt(new THREE.Vector3(0,1,0));
 };
 
 Main.prototype.initCanon = function() {
