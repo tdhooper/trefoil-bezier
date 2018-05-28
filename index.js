@@ -115,7 +115,7 @@ Main.prototype.initScene = function() {
         this.world.addConstraint(constraint);
     }.bind(this));
 
-    var sphereGeom = new THREE.SphereGeometry(beadRadius * .1, 10, 10);
+    var sphereGeom = new THREE.SphereGeometry(beadRadius * .2, 10, 10);
     this.outerSpheres = [];
     this.angle1Spheres = [];
     this.angle2Spheres = [];
@@ -129,7 +129,7 @@ Main.prototype.initScene = function() {
         material = angle2 ? angle2Mat : material;
 
         material = mat;
-        if ([10, 9, 8, 3, 2].indexOf(i) !== -1) {
+        if ([14, 0, 1, 6, 7].indexOf(i) !== -1) {
             material = angle1Mat;
         }
 
@@ -183,12 +183,18 @@ Main.prototype.initScene = function() {
     var angle2Plane = new THREE.Mesh(planeGeom, planeMat);
     var angle3Plane = new THREE.Mesh(planeGeom, planeMat);
 
-    angle1Plane.rotateZ((Math.PI * 2) / 3);
+    var ang = (Math.PI * 2) / 3;
+
+    angle1Plane.rotateZ(ang * 1.5);
+    angle1Plane.translateX(1);
     angle1Plane.rotateX(Math.PI * .5);
 
-    angle2Plane.rotateZ((Math.PI * 2) / -3);
+    angle2Plane.rotateZ(ang * 2.5);
+    angle2Plane.translateX(1);
     angle2Plane.rotateX(Math.PI * .5);
 
+    angle3Plane.rotateZ(ang * 3.5);
+    angle3Plane.translateX(1);
     angle3Plane.rotateX(Math.PI * .5);
 
     this.group.add(groundPlane);
@@ -278,7 +284,7 @@ Main.prototype.initThree = function() {
     document.body.appendChild(this.renderer.domElement);
 
     this.camera = new THREE.PerspectiveCamera(5, width / height, 0.1, 1000);
-    this.camera.position.set(0, 0, -30);
+    this.camera.position.set(1, 1, -30);
     this.camera.up.set(0,1,0);
 
     this.cameraControls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
@@ -318,7 +324,7 @@ Main.prototype.animate = function() {
 
         var output = '';
 
-        [10, 9, 8, 3, 2].forEach(function(i, j) {
+        [14, 0, 1, 6, 7].forEach(function(i, j) {
 
             var curve = this.curves[i];
 
@@ -329,24 +335,24 @@ Main.prototype.animate = function() {
             a = a.clone().lerp(b, .5);
             c = c.clone().lerp(b, .5);
 
-            var ang = (Math.PI * 2) / 3;
+            // var ang = (Math.PI * 2) / 3;
 
-            ang -= .12;
+            // // ang -= .12;
 
-            var z = new THREE.Vector3(0,0,1);
+            // // var z = new THREE.Vector3(0,0,1);
 
-            a.applyAxisAngle(z, ang);
-            b.applyAxisAngle(z, ang);
-            c.applyAxisAngle(z, ang);
+            // // a.applyAxisAngle(z, ang);
+            // // b.applyAxisAngle(z, ang);
+            // // c.applyAxisAngle(z, ang);
 
             a.multiplyScalar(1.4);
             b.multiplyScalar(1.4);
             c.multiplyScalar(1.4);
 
             output += '// ' + i + '\n';
-            output += 'vec3 a' + j + ' = vec3(' + c.toArray().join(', ') + ');\n';
+            output += 'vec3 a' + j + ' = vec3(' + a.toArray().join(', ') + ');\n';
             output += 'vec3 b' + j + ' = vec3(' + b.toArray().join(', ') + ');\n';
-            output += 'vec3 c' + j + ' = vec3(' + a.toArray().join(', ') + ');\n';
+            output += 'vec3 c' + j + ' = vec3(' + c.toArray().join(', ') + ');\n';
         }.bind(this));
 
         console.log(output);
