@@ -185,15 +185,15 @@ Main.prototype.initScene = function() {
 
     var ang = (Math.PI * 2) / 3;
 
-    angle1Plane.rotateZ(ang * 1.5);
+    angle1Plane.rotateZ(ang * 1);
     angle1Plane.translateX(1);
     angle1Plane.rotateX(Math.PI * .5);
 
-    angle2Plane.rotateZ(ang * 2.5);
+    angle2Plane.rotateZ(ang * 2);
     angle2Plane.translateX(1);
     angle2Plane.rotateX(Math.PI * .5);
 
-    angle3Plane.rotateZ(ang * 3.5);
+    angle3Plane.rotateZ(ang * 3);
     angle3Plane.translateX(1);
     angle3Plane.rotateX(Math.PI * .5);
 
@@ -322,7 +322,30 @@ Main.prototype.animate = function() {
 
     if ( ! change && ! this.done) {
 
+        var frames = this.curvePath.computeFrenetFrames(30, true);
+
         var output = '';
+
+        // this.curvePath.getSpacedPoints(30).forEach(function(point, i) {
+        //     console.log(i);
+        //     this.addFramesHelpers(point, frames, i);
+        // }.bind(this));
+
+        // this.curves.forEach(function(curve, i) {
+        //     var a = curve.lastSphere.getWorldPosition();
+        //     var b = curve.sphere.getWorldPosition();
+        //     var c = curve.nextSphere.getWorldPosition();
+
+        //     a = a.clone().lerp(b, .5);
+        //     c = c.clone().lerp(b, .5);
+
+        //     var m = new THREE.Mesh(
+        //         new THREE.SphereGeometry(.05),
+        //         new THREE.MeshLambertMaterial()
+        //     );
+        //     m.position.copy(a);
+        //     this.scene.add(m);
+        // }.bind(this));
 
         [14, 0, 1, 6, 7].forEach(function(i, j) {
 
@@ -335,15 +358,21 @@ Main.prototype.animate = function() {
             a = a.clone().lerp(b, .5);
             c = c.clone().lerp(b, .5);
 
-            // var ang = (Math.PI * 2) / 3;
+            // var m = new THREE.Mesh(
+            //     new THREE.SphereGeometry(.05),
+            //     new THREE.MeshLambertMaterial()
+            // );
+            // m.position.copy(c);
+            // this.scene.add(m);
 
-            // // ang -= .12;
+            // this.addFramesHelpers(c, frames, this.mod(i * 2 + 2, 30));
 
-            // // var z = new THREE.Vector3(0,0,1);
+            var fiA = i * 2;
+            var fiC = this.mod(i * 2 + 2, 30);
 
-            // // a.applyAxisAngle(z, ang);
-            // // b.applyAxisAngle(z, ang);
-            // // c.applyAxisAngle(z, ang);
+            var tangents = frames.tangents;
+            var normals = frames.normals;
+            var binormals = frames.binormals;
 
             a.multiplyScalar(1.4);
             b.multiplyScalar(1.4);
@@ -353,6 +382,11 @@ Main.prototype.animate = function() {
             output += 'vec3 a' + j + ' = vec3(' + a.toArray().join(', ') + ');\n';
             output += 'vec3 b' + j + ' = vec3(' + b.toArray().join(', ') + ');\n';
             output += 'vec3 c' + j + ' = vec3(' + c.toArray().join(', ') + ');\n';
+            output += 'vec3 aTan' + j + ' = vec3(' + tangents[fiA].toArray().join(', ') + ');\n';
+            output += 'vec3 cTan' + j + ' = vec3(' + tangents[fiC].toArray().join(', ') + ');\n';
+            output += 'vec3 aNor' + j + ' = vec3(' + normals[fiA].toArray().join(', ') + ');\n';
+            output += 'vec3 cNor' + j + ' = vec3(' + normals[fiC].toArray().join(', ') + ');\n';
+
         }.bind(this));
 
         console.log(output);
@@ -361,6 +395,27 @@ Main.prototype.animate = function() {
 
     this.render();
 };
+
+Main.prototype.addFramesHelpers = function(position, frames, i) {
+    this.scene.add(new THREE.ArrowHelper(
+        frames.normals[i],
+        position,
+        0.2,
+        0xff0000
+    ));
+    this.scene.add(new THREE.ArrowHelper(
+        frames.binormals[i],
+        position,
+        0.2,
+        0x00ff00
+    ));
+    this.scene.add(new THREE.ArrowHelper(
+        frames.tangents[i],
+        position,
+        0.2,
+        0x0000ff
+    ));
+}
 
 Main.prototype.setSize = function(width, height) {
     this.camera.aspect = width / height;
