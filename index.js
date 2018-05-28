@@ -129,7 +129,7 @@ Main.prototype.initScene = function() {
         material = angle2 ? angle2Mat : material;
 
         material = mat;
-        if ([5, 9].indexOf(i) !== -1) {
+        if ([10, 14].indexOf(i) !== -1) {
             material = angle1Mat;
         }
 
@@ -206,8 +206,24 @@ Main.prototype.initScene = function() {
         new THREE.SphereGeometry(.05),
         new THREE.MeshLambertMaterial()
     );
-    m.position.x = Math.sin((Math.PI / 6) * 2);
-    m.position.y = Math.cos((Math.PI / 6) * 2);
+    m.position.x = Math.sin((Math.PI / 6) * -5);
+    m.position.y = Math.cos((Math.PI / 6) * -5);
+    m.position.z = .3;
+
+    var v = new THREE.Vector3(
+        Math.sin(ang),
+        Math.cos(ang),
+        0
+    );
+    this.scene.add(new THREE.ArrowHelper(
+        v,
+        new THREE.Vector3(),
+        .5,
+        0xff0000
+    ));
+
+    // m.position = m.position.reflect(v);
+
     this.scene.add(m);
 };
 
@@ -243,6 +259,14 @@ Main.prototype.orient = function(p, angle) {
     // return p;
 };
 
+Main.prototype.mirror = function(v, normal) {
+    return v.clone().sub(
+        normal.clone().multiplyScalar(
+            2 * v.dot(normal)
+        ) 
+    );
+};
+
 Main.prototype.update = function() {
 
     var TAU = Math.PI * 2;
@@ -257,13 +281,50 @@ Main.prototype.update = function() {
     ];
 
     var mirrorGroups = [
-        [0, 14],
-        [1, 13],
-        [2, 12],
-        [3, 11],
-        [4, 10],
-        [5, 9],
-        [6, 8],
+        {
+            normal: new THREE.Vector3(-1,0,0),
+            pairs: [
+                [0, 14],
+                [1, 13],
+                [2, 12],
+                [3, 11],
+                [4, 10],
+                [5, 9],
+                [6, 8],
+            ]
+        },
+        {
+            normal: new THREE.Vector3(
+                Math.sin(a * 5),
+                Math.cos(a * 5),
+                0
+            ),
+            pairs: [
+                [3, 1],
+                [4, 0],
+                [5, 14],
+                [6, 13],
+                [7, 12],
+                [8, 11],
+                [9, 10]
+            ]
+        },
+        {
+            normal: new THREE.Vector3(
+                Math.sin(a * -5),
+                Math.cos(a * -5),
+                0
+            ),
+            pairs: [
+                [5, 4],
+                [6, 3],
+                [7, 2],
+                [8, 1],
+                [9, 0],
+                [10, 14],
+                [11, 13]
+            ]
+        }
     ];
 
     rotAndPlaneGroups.forEach(function(group) {
@@ -279,11 +340,15 @@ Main.prototype.update = function() {
     }.bind(this));
 
     mirrorGroups.forEach(function(group) {
-        var a = this.spheres[group[0]].body.position;
-        var b = this.spheres[group[1]].body.position;
-        a.x = -b.x;
-        a.y = b.y;
-        a.z = -b.z;
+        group.pairs.forEach(function(pair) {
+            var a = this.spheres[pair[0]].body.position;
+            var b = this.spheres[pair[1]].body.position;
+            var v = new THREE.Vector3().copy(b);
+            v.reflect(group.normal);
+            a.x = v.x;
+            a.y = v.y;
+            a.z = -b.z;
+        }.bind(this));
     }.bind(this));
 
     // this.orient(this.spheres[9].body.position, TAU / 4);
