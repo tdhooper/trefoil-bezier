@@ -33,12 +33,15 @@ Main.prototype.initScene = function() {
     this.scene = new THREE.Scene();
     this.scene.add(this.camera);
 
+    this.groupZ = new THREE.Group();
+    this.groupY = new THREE.Group();
+    this.groupX = new THREE.Group();
     this.group = new THREE.Group();
 
-    this.group2 = new THREE.Group();
-    this.group2.add(this.group);
-    this.scene.add(this.group2);
-
+    this.scene.add(this.groupZ);
+    this.groupZ.add(this.groupY);
+    this.groupY.add(this.groupX);
+    this.groupX.add(this.group);
 
     var light = new THREE.PointLight( 0xffffff, 2, 100 );
     light.position.set( -5, 5, 5 );
@@ -69,8 +72,8 @@ Main.prototype.initScene = function() {
     var planeMat = new THREE.MeshLambertMaterial({
         color: 0x666666,
         side: THREE.DoubleSide,
-        opacity: 0.25,
-        transparent: true
+        // opacity: 0.25,
+        // transparent: true
     });
 
     var count = 15;
@@ -117,9 +120,16 @@ Main.prototype.initScene = function() {
         var outer = i % (count / 3) == 2;
         var angle1 =  i == 0 || i == 4;
         var angle2 =  i == 10 || i == 14;
+
         var material = outer ? outerMat : mat;
         material = angle1 ? angle1Mat : material;
         material = angle2 ? angle2Mat : material;
+
+        material = mat;
+        if ([2, 3, 8, 9, 10].indexOf(i) !== -1) {
+            material = angle1Mat;
+        }
+
         var sphere = new THREE.Mesh(sphereGeom, material);
         sphere.body = bodies;
         this.group.add(sphere);
@@ -284,8 +294,8 @@ Main.prototype.initThree = function() {
     document.body.appendChild(this.renderer.domElement);
 
     this.camera = new THREE.PerspectiveCamera(5, width / height, 0.1, 1000);
-    this.camera.position.set(0, 0, 30);
-    this.camera.up.set(0,-1,0);
+    this.camera.position.set(0, 0, -30);
+    this.camera.up.set(0,1,0);
 
     this.cameraControls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
 };
@@ -295,6 +305,14 @@ Main.prototype.render = function() {
     this.renderer.render(this.scene, this.camera);
 };
 
+Main.prototype.isStatic = function(lastPos, pos) {
+    var diff = 0;
+    diff += Math.abs(pos.x - lastPos.x);
+    diff += Math.abs(pos.y - lastPos.y);
+    diff += Math.abs(pos.z - lastPos.z);
+    return diff < 0.00001;
+};
+
 Main.prototype.animate = function() {
     requestAnimationFrame(this.animate.bind(this));
 
@@ -302,11 +320,7 @@ Main.prototype.animate = function() {
     var change = true;
 
     if (this.lastPosition) {
-        var diff = 0;
-        diff += Math.abs(position.x - this.lastPosition.x);
-        diff += Math.abs(position.y - this.lastPosition.y);
-        diff += Math.abs(position.z - this.lastPosition.z);
-        change = diff > 0.00001;
+        change = ! this.isStatic(this.lastPosition, position);
     }
 
     this.lastPosition = position;
@@ -316,20 +330,110 @@ Main.prototype.animate = function() {
         this.update();
     }
 
-    if ( ! change && ! this.adjusted) {
-        // this.group.position.copy(this.center).multiplyScalar(-1);
-        // this.group2.rotateZ(.01);
-        // this.group.up = this.normal.clone();
-        // this.group2.lookAt(this.normal.clone().multiplyScalar(-1));
+    if ( ! change && ! this.debugDone) {
+        // this.group2.lookAt(this.up);
+        this.group.position.copy(this.center).multiplyScalar(-1);
 
-        var arrowHelper = new THREE.ArrowHelper(
-            this.normal,
-            this.center
+        var x = new THREE.Vector3(1,0,0);
+        var y = new THREE.Vector3(0,1,0);
+        var z = new THREE.Vector3(0,0,1);
+
+        this.groupX.rotateX(
+            -this.debugSphere
+                .getWorldPosition()
+                .projectOnPlane(x)
+                .normalize()
+                .angleTo(z)
         );
-        this.scene.add( arrowHelper );
-        // center
-        // rotat on y, so 
-        // console.log('done');
+
+        this.groupY.rotateY(
+            -this.debugSphere
+                .getWorldPosition()
+                .projectOnPlane(y)
+                .normalize()
+                .angleTo(z)
+        );
+
+        var debugPos = this.debugSphere.getWorldPosition().clone();
+        var debugChange = true;
+
+        if (this.lastDebugPos) {
+            debugChange = ! this.isStatic(this.lastDebugPos, debugPos);
+        }
+
+        if ( ! debugChange) {
+
+            this.groupZ.rotateZ(
+                this.angle1Spheres[0]
+                    .getWorldPosition()
+                    .projectOnPlane(z)
+                    .normalize()
+                    .angleTo(x)
+            );
+
+            this.debugDone = true;
+
+            var arrowHelper = new THREE.ArrowHelper(
+                y,
+                new THREE.Vector3()
+            );
+            this.scene.add( arrowHelper );
+
+            var output = '';
+
+            [10, 9, 8, 3, 2].forEach(function(i, j) {
+
+                var curve = this.curves[i];
+
+                var a = curve.lastSphere.getWorldPosition();
+                var b = curve.sphere.getWorldPosition();
+                var c = curve.nextSphere.getWorldPosition();
+
+                a = a.clone().lerp(b, .5);
+                c = c.clone().lerp(b, .5);
+
+                var ang = (Math.PI * 2) / 3;
+
+                ang -= .12;
+
+                a.applyAxisAngle(z, ang);
+                b.applyAxisAngle(z, ang);
+                c.applyAxisAngle(z, ang);
+
+                a.multiplyScalar(1.4);
+                b.multiplyScalar(1.4);
+                c.multiplyScalar(1.4);
+
+                output += '// ' + i + '\n';
+                output += 'vec3 a' + j + ' = vec3(' + c.toArray().join(', ') + ');\n';
+                output += 'vec3 b' + j + ' = vec3(' + b.toArray().join(', ') + ');\n';
+                output += 'vec3 c' + j + ' = vec3(' + a.toArray().join(', ') + ');\n';
+            }.bind(this));
+
+            console.log(output);
+        }
+
+        this.lastDebugPos = debugPos;
+
+        // if (! this.adjusted) {
+        // this.groupX.rotateX(.8);
+        // }
+        // // // this.groupY.rotateY(.01);
+        // this.groupZ.rotateZ(.01);
+
+        // console.log(this.debugSphere.getWorldPosition().normalize());
+        // this.group2.lookAt(wrld.multiplyScalar(-1));
+        // this.group2.rotateX(.01);
+        // this.group.up = this.normal.clone();
+
+        // var arrowHelper = new THREE.ArrowHelper(
+        //     this.normal,
+        //     this.center
+        // );
+        // this.scene.add( arrowHelper );
+        // // center
+        // // rotat on y, so 
+        // // console.log('done');
         this.adjusted = true;
     }
 
