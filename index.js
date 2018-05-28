@@ -69,7 +69,8 @@ Main.prototype.initScene = function() {
         color: 0xff00fff,
     });
     var tubeMat = new THREE.MeshLambertMaterial({
-        color: 0x666666
+        color: 0x000000,
+        wireframe: true
     });
     this.curveMat = tubeMat;
     var planeMat = new THREE.MeshLambertMaterial({
@@ -115,7 +116,7 @@ Main.prototype.initScene = function() {
         this.world.addConstraint(constraint);
     }.bind(this));
 
-    var sphereGeom = new THREE.SphereGeometry(beadRadius * .2, 10, 10);
+    var sphereGeom = new THREE.SphereGeometry(beadRadius * .8, 10, 10);
     this.outerSpheres = [];
     this.angle1Spheres = [];
     this.angle2Spheres = [];
@@ -129,7 +130,7 @@ Main.prototype.initScene = function() {
         material = angle2 ? angle2Mat : material;
 
         material = mat;
-        if ([10, 14].indexOf(i) !== -1) {
+        if ([14,0,1,  5,6,7,8,9,10].indexOf(i) !== -1) {
             material = angle1Mat;
         }
 
@@ -184,17 +185,22 @@ Main.prototype.initScene = function() {
     var angle3Plane = new THREE.Mesh(planeGeom, planeMat);
 
     var ang = (Math.PI * 2) / 3;
+    var off = 0.;
+    // var off = .7;
+    // var off = 1.3; 7
+    var off = -.4;7
 
-    angle1Plane.rotateZ(ang * 1);
-    // angle1Plane.translateX(1);
+
+    angle1Plane.rotateZ(ang * 1 + off);
+    angle1Plane.translateX(1);
     angle1Plane.rotateX(Math.PI * .5);
 
-    angle2Plane.rotateZ(ang * 2);
-    // angle2Plane.translateX(1);
+    angle2Plane.rotateZ(ang * 2 + off);
+    angle2Plane.translateX(1);
     angle2Plane.rotateX(Math.PI * .5);
 
-    angle3Plane.rotateZ(ang * 3);
-    // angle3Plane.translateX(1);
+    angle3Plane.rotateZ(ang * 3 + off);
+    angle3Plane.translateX(1);
     angle3Plane.rotateX(Math.PI * .5);
 
     this.group.add(groundPlane);
@@ -406,7 +412,7 @@ Main.prototype.update = function() {
     var curveGeom = new THREE.TubeBufferGeometry(
         this.curvePath,
         150,
-        this.beadRadius * .1,
+        this.beadRadius * .9,
         20,
         true
     );
@@ -506,7 +512,7 @@ Main.prototype.animate = function() {
         //     this.scene.add(m);
         // }.bind(this));
 
-        [14, 0, 1, 6, 7].forEach(function(i, j) {
+        [14,0,1,  5,6,7,8,9,10].forEach(function(i, j) {
 
             var curve = this.curves[i];
 
@@ -523,6 +529,12 @@ Main.prototype.animate = function() {
             // );
             // m.position.copy(c);
             // this.scene.add(m);
+
+            var z = new THREE.Vector3(0,0,1);
+
+            // a.applyAxisAngle(z, -.4);
+            // b.applyAxisAngle(z, -.4);
+            // c.applyAxisAngle(z, -.4);
 
             // this.addFramesHelpers(c, frames, this.mod(i * 2 + 2, 30));
 
